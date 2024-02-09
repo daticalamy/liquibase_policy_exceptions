@@ -1,0 +1,31 @@
+##########           LIQUIBASE FLOWFILE                ##########
+##########  learn more http://docs.liquibase.com/flow  ##########
+
+stages:
+
+  ## The first stage of actions
+  FindNonExpiredExceptions:
+    actions:
+      #
+      # Check that jq is installed
+      #
+      - type: shell
+        command: jq --version
+      
+      #
+      # Find exceptions for $APP_NAME that have not expired.
+      # Put these exceptions into an allowlist variable.
+      # Disable all Quality Checks in the allowlist.
+      # TO DO: once --checkname is supported with bulk-set, set these checks to SEVERITY 0 instead of disabling them
+      #
+      - type: shell
+        command: |
+          echo "Checking quality check exceptions for Application: ${APP_NAME}"
+          allowlist=$(< quality_checks_overrides/qc_overrides.json jq -r --arg appname "${APP_NAME}" '[.qualityChecksOverrides[] | select( .app_name==$appname ) | select( .start_date > (now - .time_to_live_days*24*60*60 | strftime("%Y-%m-%dT%H:%M:%SZ"))) | .policy] | join(",")')
+          echo "Allow List: $allowlist"
+          echo "Turn off checks contained in Allow List"
+          for i in ${allowlist//,/ }
+          do
+            echo "Turn off check $i"
+            liquibase checks disable --check-name=$i --checks-settings-file=quality_checks/liquibase.checks-settings.conf
+          done
