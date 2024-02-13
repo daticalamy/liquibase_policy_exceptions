@@ -9,7 +9,7 @@
 		{
             "app_name": "APP_ABC",
             "policy": "CheckTablesForIndex",
-            "time_to_live_days": 0,
+            "time_to_live_days": 60,
             "start_date": "2024-01-01T00:00:00Z"
         }
 		
